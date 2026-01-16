@@ -152,8 +152,8 @@ class TestRekordboxLoader:
             mock_db.create_playlist.return_value = new_pl
 
             # Mock get_content
-            mock_db.get_content.side_effect = (
-                lambda track_id: MagicMock() if track_id == 101 else None
+            mock_db.get_content.side_effect = lambda **kwargs: (
+                MagicMock() if kwargs.get("ID") == 101 else None
             )
 
             with patch("dj_playlist_optimizer.rekordbox.Rekordbox6Database", return_value=mock_db):
@@ -193,6 +193,7 @@ class TestRekordboxXML:
         assert root.tag == "DJ_PLAYLISTS"
 
         collection = root.find("COLLECTION")
+        assert collection is not None
         assert len(collection) == 2
 
         # Check track 1
@@ -203,9 +204,10 @@ class TestRekordboxXML:
         assert t1.get("Location") == "file://localhost/music/t1.mp3"
 
         playlists = root.find("PLAYLISTS")
+        assert playlists is not None
         pl_node = playlists.find(".//NODE[@Type='1']")
         assert pl_node is not None
-        assert pl_node.get("Name").startswith("SourcePL_")
+        assert pl_node.get("Name", "").startswith("SourcePL_")
         assert len(pl_node) == 2
 
         # Check track ref
