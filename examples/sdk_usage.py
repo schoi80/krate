@@ -1,6 +1,6 @@
 """SDK usage example for DJ Playlist Optimizer."""
 
-from krate import (
+from djkr8 import (
     HarmonicLevel,
     PlaylistOptimizer,
     Track,

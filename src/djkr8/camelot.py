@@ -2,7 +2,7 @@
 
 import logging
 
-from krate.models import HarmonicLevel
+from djkr8.models import HarmonicLevel
 
 logger = logging.getLogger(__name__)
 

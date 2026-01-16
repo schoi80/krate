@@ -26,7 +26,7 @@ install:
 	uv run pre-commit install --hook-type commit-msg
 
 test:
-	uv run python -m pytest --cov=src/krate
+	uv run python -m pytest --cov=src/djkr8
 
 lint:
 	uv run ruff check --fix

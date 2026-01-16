@@ -2,13 +2,13 @@
 
 import pytest
 
-from krate.camelot import (
+from djkr8.camelot import (
     get_compatible_keys,
     get_hour_distance,
     is_harmonic_compatible,
     parse_camelot_key,
 )
-from krate.models import HarmonicLevel
+from djkr8.models import HarmonicLevel
 
 
 class TestParseCamelotKey:

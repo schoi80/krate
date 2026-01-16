@@ -4,9 +4,9 @@ import logging
 
 from ortools.sat.python import cp_model
 
-from krate.bpm import bpm_compatible, get_bpm_difference
-from krate.camelot import is_harmonic_compatible
-from krate.models import (
+from djkr8.bpm import bpm_compatible, get_bpm_difference
+from djkr8.camelot import is_harmonic_compatible
+from djkr8.models import (
     HarmonicLevel,
     PlaylistResult,
     PlaylistStatistics,

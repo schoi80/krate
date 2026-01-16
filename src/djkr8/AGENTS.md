@@ -1,4 +1,4 @@
-# AGENTS.md - src/krate
+# AGENTS.md - src/djkr8
 
 ## OVERVIEW
 Core logic for harmonic playlist optimization using CP-SAT and Rekordbox integration.

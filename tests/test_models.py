@@ -1,6 +1,6 @@
 import pytest
 
-from krate.models import PlaylistStatistics, Track
+from djkr8.models import PlaylistStatistics, Track
 
 
 class TestModels:

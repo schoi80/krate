@@ -1,19 +1,19 @@
 """DJ Playlist Optimizer - Harmonic mixing with Google OR-Tools."""
 
-from krate.bpm import bpm_compatible, get_bpm_difference
-from krate.camelot import (
+from djkr8.bpm import bpm_compatible, get_bpm_difference
+from djkr8.camelot import (
     get_compatible_keys,
     is_harmonic_compatible,
     parse_camelot_key,
 )
-from krate.models import (
+from djkr8.models import (
     HarmonicLevel,
     PlaylistResult,
     PlaylistStatistics,
     Track,
     TransitionInfo,
 )
-from krate.optimizer import PlaylistOptimizer
+from djkr8.optimizer import PlaylistOptimizer
 
 __version__ = "0.1.0"
 

@@ -1,4 +1,4 @@
-# 🎧 krate - Playlist Optimizer for rekordbox
+# 🎧 djkr8 - Playlist Optimizer for rekordbox
 
 Optimize [rekordbox](https://rekordbox.com) playlists for harmonic mixing using [Google OR-Tools](https://developers.google.com/optimization) constraint programming.
 
@@ -17,13 +17,13 @@ Optimize [rekordbox](https://rekordbox.com) playlists for harmonic mixing using 
 ## Installation
 
 ```bash
-uv add krate
+uv add djkr8
 ```
 
 Or with pip:
 
 ```bash
-pip install krate
+pip install djkr8
 ```
 
 ## Quick Start
@@ -31,7 +31,7 @@ pip install krate
 ### SDK Usage
 
 ```python
-from krate import PlaylistOptimizer, Track, HarmonicLevel
+from djkr8 import PlaylistOptimizer, Track, HarmonicLevel
 
 tracks = [
     Track(id="track_001", key="8A", bpm=128),
@@ -56,17 +56,17 @@ for i, track in enumerate(result.playlist, 1):
 
 ```bash
 # Basic usage
-krate tracks.json
+djkr8 tracks.json
 
 # With custom settings
-krate tracks.json --bpm-tolerance 8 --harmonic-level moderate
+djkr8 tracks.json --bpm-tolerance 8 --harmonic-level moderate
 
 # Energy flow management
-krate tracks.json --energy-weight 5.0      # Prioritize higher energy tracks
-krate tracks.json --allow-energy-drops    # Disable strict non-decreasing energy constraint
+djkr8 tracks.json --energy-weight 5.0      # Prioritize higher energy tracks
+djkr8 tracks.json --allow-energy-drops    # Disable strict non-decreasing energy constraint
 
 # Save results to JSON
-krate tracks.json --output result.json
+djkr8 tracks.json --output result.json
 
 # Use with Rekordbox (v6/v7)
 krate --rekordbox                                      # List playlists
@@ -75,8 +75,8 @@ krate --rekordbox --playlist "Techno" --output r.xml   # Export to Rekordbox XML
 krate --rekordbox --playlist "Techno" --write-to-db    # Write directly to Rekordbox DB
 
 # Enable verbose logging
-krate tracks.json -v          # INFO level
-krate tracks.json -vv         # DEBUG level
+djkr8 tracks.json -v          # INFO level
+djkr8 tracks.json -vv         # DEBUG level
 ```
 
 ## Rekordbox Integration
@@ -177,7 +177,7 @@ See `examples/` directory:
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/krate
+git clone https://github.com/yourusername/djkr8
 cd krate
 
 # Install with dev dependencies

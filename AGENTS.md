@@ -1,4 +1,4 @@
-# DJ PLAYLIST OPTIMIZER - PROJECT KNOWLEDGE BASE
+# DJKR8 - PROJECT KNOWLEDGE BASE
 
 **Generated:** 2026-01-16
 
@@ -8,7 +8,7 @@ Python library + CLI for optimizing DJ playlists using Google OR-Tools CP-SAT so
 ## STRUCTURE
 ```
 .
-├── src/krate/   # Core logic (solver, models, integrations)
+├── src/djkr8/   # Core logic (solver, models, integrations)
 ├── tests/                       # Unit + integration tests (pure pytest, no fixtures)
 ├── examples/                    # Usage demos (SDK + logging)
 └── pyproject.toml               # uv-managed dependencies + tool config
@@ -17,12 +17,12 @@ Python library + CLI for optimizing DJ playlists using Google OR-Tools CP-SAT so
 ## WHERE TO LOOK
 | Task | Location | Notes |
 |------|----------|-------|
-| **Core Solver** | `src/krate/optimizer.py` | Uses `AddCircuit` constraint for TSP-like pathfinding |
-| **Data Models** | `src/krate/models.py` | `Track`, `PlaylistResult`, `HarmonicLevel` |
-| **BPM Logic** | `src/krate/bpm.py` | Pure functions for BPM compatibility |
-| **Harmonic Rules** | `src/krate/camelot.py` | Camelot Wheel math + `KEY_MAPPING` |
-| **Rekordbox** | `src/krate/rekordbox.py` | Direct DB read/write + XML export |
-| **CLI** | `src/krate/cli.py` | `argparse` entry point + logging setup |
+| **Core Solver** | `src/djkr8/optimizer.py` | Uses `AddCircuit` constraint for TSP-like pathfinding |
+| **Data Models** | `src/djkr8/models.py` | `Track`, `PlaylistResult`, `HarmonicLevel` |
+| **BPM Logic** | `src/djkr8/bpm.py` | Pure functions for BPM compatibility |
+| **Harmonic Rules** | `src/djkr8/camelot.py` | Camelot Wheel math + `KEY_MAPPING` |
+| **Rekordbox** | `src/djkr8/rekordbox.py` | Direct DB read/write + XML export |
+| **CLI** | `src/djkr8/cli.py` | `argparse` entry point + logging setup |
 
 ## CODE MAP
 | Symbol | Type | Location | Role |
@@ -67,9 +67,9 @@ uv run ruff check --fix && uv run ruff format
 uv run pre-commit run --all-files
 
 # CLI Usage
-uv run krate tracks.json --harmonic-level moderate
-uv run krate --rekordbox --playlist "Techno" --output result.xml
-uv run krate --rekordbox --playlist "Techno" --write-to-db
+uv run djkr8 tracks.json --harmonic-level moderate
+uv run djkr8 --rekordbox --playlist "Techno" --output result.xml
+uv run djkr8 --rekordbox --playlist "Techno" --write-to-db
 ```
 
 ## NOTES

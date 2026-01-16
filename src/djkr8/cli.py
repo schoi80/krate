@@ -8,12 +8,12 @@ from datetime import datetime
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
-from krate import (
+from djkr8 import (
     HarmonicLevel,
     PlaylistOptimizer,
     Track,
 )
-from krate.rekordbox import HAS_PYREKORDBOX, RekordboxLoader, write_rekordbox_xml
+from djkr8.rekordbox import HAS_PYREKORDBOX, RekordboxLoader, write_rekordbox_xml
 
 logger = logging.getLogger(__name__)
 
@@ -242,7 +242,7 @@ Examples:
     )
 
     try:
-        __version__ = version("krate")
+        __version__ = version("djkr8")
     except PackageNotFoundError:
         __version__ = "0.0.0"
 

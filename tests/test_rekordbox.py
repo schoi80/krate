@@ -3,8 +3,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from krate import rekordbox
-from krate.models import PlaylistResult, Track
+from djkr8 import rekordbox
+from djkr8.models import PlaylistResult, Track
 
 
 # Sample data for tests
@@ -40,16 +40,16 @@ def playlist_result(sample_tracks):
 class TestRekordboxLoader:
     def test_init_no_pyrekordbox(self):
         with (
-            patch("krate.rekordbox.HAS_PYREKORDBOX", False),
+            patch("djkr8.rekordbox.HAS_PYREKORDBOX", False),
             pytest.raises(ImportError, match="pyrekordbox is not installed"),
         ):
             rekordbox.RekordboxLoader()
 
     def test_init_db_error(self):
         with (
-            patch("krate.rekordbox.HAS_PYREKORDBOX", True),
+            patch("djkr8.rekordbox.HAS_PYREKORDBOX", True),
             patch(
-                "krate.rekordbox.Rekordbox6Database",
+                "djkr8.rekordbox.Rekordbox6Database",
                 side_effect=Exception("DB Locked"),
             ),
             pytest.raises(RuntimeError, match="Failed to initialize Rekordbox database"),
@@ -57,7 +57,7 @@ class TestRekordboxLoader:
             rekordbox.RekordboxLoader()
 
     def test_list_playlists(self):
-        with patch("krate.rekordbox.HAS_PYREKORDBOX", True):
+        with patch("djkr8.rekordbox.HAS_PYREKORDBOX", True):
             mock_db = MagicMock()
 
             # Mock playlist objects
@@ -77,7 +77,7 @@ class TestRekordboxLoader:
 
             mock_db.get_playlist.return_value = [p1, p2, p3]
 
-            with patch("krate.rekordbox.Rekordbox6Database", return_value=mock_db):
+            with patch("djkr8.rekordbox.Rekordbox6Database", return_value=mock_db):
                 loader = rekordbox.RekordboxLoader()
                 playlists = loader.list_playlists()
 
@@ -88,7 +88,7 @@ class TestRekordboxLoader:
                 assert playlists[1].count == 0
 
     def test_get_tracks(self):
-        with patch("krate.rekordbox.HAS_PYREKORDBOX", True):
+        with patch("djkr8.rekordbox.HAS_PYREKORDBOX", True):
             mock_db = MagicMock()
 
             # Mock playlist
@@ -123,7 +123,7 @@ class TestRekordboxLoader:
 
             mock_db.get_playlist.return_value = [pl]
 
-            with patch("krate.rekordbox.Rekordbox6Database", return_value=mock_db):
+            with patch("djkr8.rekordbox.Rekordbox6Database", return_value=mock_db):
                 loader = rekordbox.RekordboxLoader()
                 tracks = loader.get_tracks("My Playlist")
 
@@ -146,7 +146,7 @@ class TestRekordboxLoader:
                     loader.get_tracks("Missing")
 
     def test_write_playlist_to_db(self, playlist_result):
-        with patch("krate.rekordbox.HAS_PYREKORDBOX", True):
+        with patch("djkr8.rekordbox.HAS_PYREKORDBOX", True):
             mock_db = MagicMock()
             new_pl = MagicMock()
             mock_db.create_playlist.return_value = new_pl
@@ -156,7 +156,7 @@ class TestRekordboxLoader:
                 MagicMock() if kwargs.get("ID") == 101 else None
             )
 
-            with patch("krate.rekordbox.Rekordbox6Database", return_value=mock_db):
+            with patch("djkr8.rekordbox.Rekordbox6Database", return_value=mock_db):
                 loader = rekordbox.RekordboxLoader()
 
                 # Modify one track to have no ID
@@ -170,11 +170,11 @@ class TestRekordboxLoader:
                 mock_db.commit.assert_called_once()
 
     def test_write_playlist_to_db_failure(self, playlist_result):
-        with patch("krate.rekordbox.HAS_PYREKORDBOX", True):
+        with patch("djkr8.rekordbox.HAS_PYREKORDBOX", True):
             mock_db = MagicMock()
             mock_db.create_playlist.side_effect = RuntimeError("Fail create")
 
-            with patch("krate.rekordbox.Rekordbox6Database", return_value=mock_db):
+            with patch("djkr8.rekordbox.Rekordbox6Database", return_value=mock_db):
                 loader = rekordbox.RekordboxLoader()
                 with pytest.raises(RuntimeError, match="Failed to create playlist"):
                     loader.write_playlist_to_db(playlist_result, "Fail")
