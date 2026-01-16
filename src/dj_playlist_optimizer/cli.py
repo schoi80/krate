@@ -99,8 +99,9 @@ def main():
 Examples:
   %(prog)s tracks.json
   %(prog)s tracks.json --bpm-tolerance 8 --harmonic-level moderate
-  %(prog)s tracks.json --output result.json --time-limit 120
-  %(prog)s tracks.json --no-halftime --max-violations 0.05
+  %(prog)s tracks.json --start track_001 --end track_005
+  %(prog)s tracks.json --must-include track_002 track_003 --length 5
+  %(prog)s tracks.json --output result.json --time-limit 30
         """,
     )
 
@@ -152,9 +153,9 @@ Examples:
     parser.add_argument(
         "--time-limit",
         type=float,
-        default=60.0,
+        default=5.0,
         metavar="SEC",
-        help="Solver time limit in seconds (default: 60)",
+        help="Solver time limit in seconds (default: 5.0)",
     )
 
     parser.add_argument(
@@ -172,6 +173,36 @@ Examples:
         help="Weight for energy level optimization (default: 0.0)",
     )
 
+    # New arguments
+    parser.add_argument(
+        "--start",
+        type=str,
+        metavar="ID",
+        help="Track ID that must start the playlist",
+    )
+
+    parser.add_argument(
+        "--end",
+        type=str,
+        metavar="ID",
+        help="Track ID that must end the playlist",
+    )
+
+    parser.add_argument(
+        "--must-include",
+        type=str,
+        nargs="+",
+        metavar="ID",
+        help="List of track IDs that must be included (soft constraint)",
+    )
+
+    parser.add_argument(
+        "--length",
+        type=int,
+        metavar="N",
+        help="Target fixed playlist length (number of tracks)",
+    )
+
     parser.add_argument(
         "--verbose",
         "-v",
@@ -180,7 +211,7 @@ Examples:
         help="Increase verbosity (-v for INFO, -vv for DEBUG)",
     )
 
-    parser.add_argument("--version", action="version", version="%(prog)s 0.1.0")
+    parser.add_argument("--version", action="version", version="%(prog)s 0.2.0")
 
     args = parser.parse_args()
 
@@ -222,7 +253,15 @@ Examples:
     )
 
     print("Optimizing playlist...")
-    result = optimizer.optimize(tracks)
+
+    # Pass new arguments to optimize
+    result = optimizer.optimize(
+        tracks,
+        start_track_id=args.start,
+        end_track_id=args.end,
+        must_include_ids=args.must_include,
+        target_length=args.length,
+    )
 
     if not result.playlist:
         print(f"No solution found. Solver status: {result.solver_status}", file=sys.stderr)

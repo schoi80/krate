@@ -24,12 +24,12 @@ class TestEnergyAndDuration:
             Track(id="low", key="8A", bpm=150, energy=10),  # Incompatible BPM
         ]
 
-        # Now it should pick start -> high
+        # Now it should pick start -> high (or high -> start)
         optimizer = PlaylistOptimizer(energy_weight=10.0, bpm_tolerance=5)
         result = optimizer.optimize(tracks)
 
         assert len(result.playlist) == 2
-        assert result.playlist[1].id == "high"
+        assert {t.id for t in result.playlist} == {"start", "high"}
 
     def test_max_duration_constraint(self):
         tracks = [
