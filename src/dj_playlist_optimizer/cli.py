@@ -4,6 +4,7 @@ import argparse
 import json
 import logging
 import sys
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
 from dj_playlist_optimizer import (
@@ -211,7 +212,12 @@ Examples:
         help="Increase verbosity (-v for INFO, -vv for DEBUG)",
     )
 
-    parser.add_argument("--version", action="version", version="%(prog)s 0.2.0")
+    try:
+        __version__ = version("dj-playlist-optimizer")
+    except PackageNotFoundError:
+        __version__ = "0.0.0"
+
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
 
     args = parser.parse_args()
 
