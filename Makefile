@@ -1,4 +1,4 @@
-.PHONY: help install test lint format pre-commit clean run-example check
+.PHONY: help install test lint lint-check format format-check pre-commit clean run-example check
 
 # Default target
 .DEFAULT_GOAL := help
@@ -12,8 +12,10 @@ help:
 	@echo "  install      Install dependencies and pre-commit hooks"
 	@echo "  test         Run tests with pytest"
 	@echo "  lint         Run ruff check and auto-fix"
+	@echo "  lint-check   Run ruff check without fixing"
 	@echo "  format       Run ruff formatter"
-	@echo "  check        Run lint and test"
+	@echo "  format-check Run ruff format check"
+	@echo "  check        Run lint-check, format-check, and test"
 	@echo "  pre-commit   Run all pre-commit hooks"
 	@echo "  clean        Remove temporary files and virtual environment"
 	@echo "  run-example  Run the SDK usage example"
@@ -29,10 +31,16 @@ test:
 lint:
 	uv run ruff check --fix
 
+lint-check:
+	uv run ruff check
+
 format:
 	uv run ruff format
 
-check: lint test
+format-check:
+	uv run ruff format --check
+
+check: lint-check format-check test
 
 pre-commit:
 	uv run pre-commit run --all-files

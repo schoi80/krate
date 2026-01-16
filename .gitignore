@@ -138,4 +138,5 @@ cython_debug/
 .DS_Store
 
 # uv
-uv.lock
+# uv.lock is committed to ensure reproducible environments
+# uv.lock
