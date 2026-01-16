@@ -41,6 +41,8 @@ def load_tracks_from_json(filepath: Path) -> list[Track]:
                 id=item["id"],
                 key=item["key"],
                 bpm=float(item["bpm"]),
+                energy=int(item.get("energy", 5)),
+                duration=float(item.get("duration", 0.0)),
             )
         )
 
@@ -156,6 +158,21 @@ Examples:
     )
 
     parser.add_argument(
+        "--max-duration",
+        type=float,
+        metavar="SEC",
+        help="Maximum total playlist duration in seconds",
+    )
+
+    parser.add_argument(
+        "--energy-weight",
+        type=float,
+        default=0.0,
+        metavar="W",
+        help="Weight for energy level optimization (default: 0.0)",
+    )
+
+    parser.add_argument(
         "--verbose",
         "-v",
         action="count",
@@ -200,6 +217,8 @@ Examples:
         max_violation_pct=args.max_violations,
         harmonic_level=harmonic_level_map[args.harmonic_level],
         time_limit_seconds=args.time_limit,
+        max_playlist_duration=args.max_duration,
+        energy_weight=args.energy_weight,
     )
 
     print("Optimizing playlist...")
@@ -221,6 +240,11 @@ Examples:
         print(
             f"  BPM range: {stats.bpm_range[0]:.0f}-{stats.bpm_range[1]:.0f} (avg: {stats.avg_bpm:.1f})"
         )
+        total_duration = sum(t.duration for t in result.playlist)
+        if total_duration > 0:
+            print(f"  Total Duration: {total_duration:.0f}s")
+        avg_energy = sum(t.energy for t in result.playlist) / len(result.playlist)
+        print(f"  Average Energy: {avg_energy:.1f}")
 
     if args.output:
         save_result_to_json(result, args.output)
@@ -228,7 +252,10 @@ Examples:
     else:
         print("\nPlaylist order:")
         for i, track in enumerate(result.playlist, 1):
-            print(f"  {i:2d}. {track.id:20s} {track.key:4s} {track.bpm:6.1f} BPM")
+            print(
+                f"  {i:2d}. {track.id:20s} {track.key:4s} {track.bpm:6.1f} BPM "
+                f"(Energy: {track.energy:2d}, Duration: {track.duration:4.0f}s)"
+            )
 
     return 0
 

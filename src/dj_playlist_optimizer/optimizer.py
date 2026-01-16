@@ -33,12 +33,16 @@ class PlaylistOptimizer:
         max_violation_pct: float = 0.10,
         harmonic_level: HarmonicLevel = HarmonicLevel.STRICT,
         time_limit_seconds: float = 60.0,
+        max_playlist_duration: float | None = None,
+        energy_weight: float = 0.0,
     ):
         self.bpm_tolerance = bpm_tolerance
         self.allow_halftime_bpm = allow_halftime_bpm
         self.max_violation_pct = max_violation_pct
         self.harmonic_level = harmonic_level
         self.time_limit_seconds = time_limit_seconds
+        self.max_playlist_duration = max_playlist_duration
+        self.energy_weight = energy_weight
 
     def optimize(self, tracks: list[Track]) -> PlaylistResult:
         """
@@ -124,7 +128,23 @@ class PlaylistOptimizer:
                 f"Found {len(violation_vars)} non-harmonic edges, max allowed: {max_violations}"
             )
 
-        model.maximize(sum(included))
+        if self.max_playlist_duration is not None:
+            precision = 100
+            total_duration_scaled = sum(
+                int(tracks[i].duration * precision) * included[i] for i in range(n)
+            )
+            model.add(total_duration_scaled <= int(self.max_playlist_duration * precision))
+            logger.debug(f"Added duration constraint: {self.max_playlist_duration}s")
+
+        length_weight = 100
+        objective_terms = [length_weight * included[i] for i in range(n)]
+
+        if self.energy_weight > 0:
+            objective_terms.extend(
+                [int(self.energy_weight * tracks[i].energy) * included[i] for i in range(n)]
+            )
+
+        model.maximize(sum(objective_terms))
 
         logger.info("Starting CP-SAT solver")
         solver = cp_model.CpSolver()

@@ -25,6 +25,8 @@ class Track:
     id: str
     key: str  # Camelot notation (e.g., "8A", "12B")
     bpm: float
+    energy: int = 5
+    duration: float = 0.0
 
     def __post_init__(self):
         """Validate track data."""
@@ -35,6 +37,10 @@ class Track:
         # Basic Camelot key validation
         if not self.key or len(self.key) < 2:
             raise ValueError(f"Invalid Camelot key: {self.key}")
+        if not (1 <= self.energy <= 10):
+            raise ValueError(f"Energy must be between 1 and 10, got: {self.energy}")
+        if self.duration < 0:
+            raise ValueError(f"Duration cannot be negative, got: {self.duration}")
 
 
 @dataclass
