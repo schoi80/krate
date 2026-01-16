@@ -35,6 +35,7 @@ class PlaylistOptimizer:
         time_limit_seconds: float = 5.0,
         max_playlist_duration: float | None = None,
         energy_weight: float = 0.0,
+        enforce_energy_flow: bool = True,
     ):
         self.bpm_tolerance = bpm_tolerance
         self.allow_halftime_bpm = allow_halftime_bpm
@@ -43,6 +44,7 @@ class PlaylistOptimizer:
         self.time_limit_seconds = time_limit_seconds
         self.max_playlist_duration = max_playlist_duration
         self.energy_weight = energy_weight
+        self.enforce_energy_flow = enforce_energy_flow
 
     def optimize(
         self,
@@ -142,7 +144,7 @@ class PlaylistOptimizer:
                 # Constraints:
                 # 1. Different tracks
                 # 2. BPM compatible
-                # 3. Energy must be non-decreasing (next >= current)
+                # 3. Energy must be non-decreasing (next >= current) if enforced
                 if (
                     i != j
                     and bpm_compatible(
@@ -151,7 +153,7 @@ class PlaylistOptimizer:
                         self.bpm_tolerance,
                         self.allow_halftime_bpm,
                     )
-                    and tracks[j].energy >= tracks[i].energy
+                    and (not self.enforce_energy_flow or tracks[j].energy >= tracks[i].energy)
                 ):
                     edge_vars[(i, j)] = model.new_bool_var(f"edge_{i}_{j}")
 

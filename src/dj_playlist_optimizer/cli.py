@@ -180,6 +180,12 @@ Examples:
         help="Weight for energy level optimization (default: 0.0)",
     )
 
+    parser.add_argument(
+        "--allow-energy-drops",
+        action="store_true",
+        help="Allow energy level to drop between tracks (default: non-decreasing flow enforced)",
+    )
+
     rb_group = parser.add_argument_group("Rekordbox Options")
     rb_group.add_argument(
         "--rekordbox",
@@ -328,6 +334,7 @@ Examples:
         time_limit_seconds=args.time_limit,
         max_playlist_duration=args.max_duration,
         energy_weight=args.energy_weight,
+        enforce_energy_flow=not args.allow_energy_drops,
     )
 
     print("Optimizing playlist...")

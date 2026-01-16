@@ -5,6 +5,7 @@ Optimize DJ playlists for harmonic mixing using Google OR-Tools constraint progr
 ## Features
 
 - ✨ **Longest Path Optimization**: Finds the maximum number of tracks that can be mixed together
+- ⚡ **Energy Flow Management**: Enforces non-decreasing energy progression (1-5 range)
 - 🎵 **Harmonic Mixing**: Uses the Camelot Wheel system for key compatibility
 - 🎧 **Rekordbox Integration**: Read playlists directly from your local Rekordbox 6/7 database (tested with v7.2.8)
 - 🔊 **BPM Matching**: Supports direct, halftime, and doubletime BPM compatibility
@@ -59,6 +60,10 @@ dj-optimize tracks.json
 
 # With custom settings
 dj-optimize tracks.json --bpm-tolerance 8 --harmonic-level moderate
+
+# Energy flow management
+dj-optimize tracks.json --energy-weight 5.0      # Prioritize higher energy tracks
+dj-optimize tracks.json --allow-energy-drops    # Disable strict non-decreasing energy constraint
 
 # Save results to JSON
 dj-optimize tracks.json --output result.json
@@ -158,6 +163,7 @@ Maximize playlist length while keeping non-harmonic transitions below the thresh
 | `allow_halftime_bpm` | True | Enable half/double-time matching |
 | `max_violation_pct` | 0.10 | Max percentage of non-harmonic transitions |
 | `harmonic_level` | STRICT | Harmonic compatibility strictness |
+| `enforce_energy_flow` | True | Enforce non-decreasing energy (`next >= current`) |
 | `time_limit_seconds` | 60.0 | Solver time limit |
 
 ## Examples
