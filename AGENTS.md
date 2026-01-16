@@ -30,13 +30,15 @@ Python library + CLI for optimizing DJ playlists using Google OR-Tools CP-SAT so
 | Symbol | Type | Location | Role |
 |--------|------|----------|------|
 | `PlaylistOptimizer` | Class | `optimizer.py` | Main facade for configuring and running the solver |
-| `Track` | Class | `models.py` | Data carrier for ID, Key, BPM, Energy, Duration |
+| `Track` | Class | `models.py` | Data carrier for ID, Key, BPM, Energy (1-5), Duration |
 | `HarmonicLevel` | Enum | `models.py` | STRICT, MODERATE, RELAXED compatibility modes |
-| `RekordboxLoader` | Class | `rekordbox.py` | Interface for reading playlists from `master.db` |
+| `RekordboxLoader` | Class | `rekordbox.py` | Interface for reading playlists from `master.db` (auto-normalizes ratings to 1-5) |
 | `write_rekordbox_xml` | Func | `rekordbox.py` | Generates XML for re-importing optimized lists |
 
 ## CONVENTIONS
 - **Layout**: `src/` layout with `uv` package manager.
+- **Energy Range**: Strictly **1-5**. Track validation enforces this.
+- **Energy Flow**: By default, the solver enforces non-decreasing energy (`next >= current`). This can be toggled via `enforce_energy_flow`.
 - **Line Length**: **100 chars** (enforced by ruff).
 - **Quotes**: Double quotes always.
 - **Commits**: Conventional Commits (feat, fix, docs, etc.) enforced by pre-commit.

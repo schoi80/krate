@@ -164,6 +164,19 @@ class RekordboxLoader:
 
         return KEY_MAPPING.get(key_str, key_str)
 
+    def _normalize_energy(self, rating: int) -> int:
+        """Normalize Rekordbox rating (0-255 or 0-5) to 1-5 energy scale."""
+        if rating <= 0:
+            return 1  # Default for unrated
+
+        if rating <= 5:
+            return rating
+
+        # Handle 0-255 scale (51 per star)
+        # 255=5, 204=4, 153=3, 102=2, 51=1
+        normalized = round(rating / 51)
+        return max(1, min(5, normalized))
+
     def list_playlists(self) -> list[PlaylistInfo]:
         """List all available playlists in the database."""
         playlists = []
@@ -243,7 +256,7 @@ class RekordboxLoader:
                         id=track_id,
                         key=key,
                         bpm=bpm_val,
-                        energy=int(content.Rating or 0),
+                        energy=self._normalize_energy(int(content.Rating or 0)),
                         duration=float(content.Length or 0),
                         path=path,
                         title=title,
