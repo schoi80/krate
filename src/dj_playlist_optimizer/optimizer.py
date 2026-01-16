@@ -32,7 +32,7 @@ class PlaylistOptimizer:
         allow_halftime_bpm: bool = True,
         max_violation_pct: float = 0.10,
         harmonic_level: HarmonicLevel = HarmonicLevel.STRICT,
-        time_limit_seconds: float = 60.0,
+        time_limit_seconds: float = 5.0,
         max_playlist_duration: float | None = None,
         energy_weight: float = 0.0,
     ):
@@ -44,12 +44,23 @@ class PlaylistOptimizer:
         self.max_playlist_duration = max_playlist_duration
         self.energy_weight = energy_weight
 
-    def optimize(self, tracks: list[Track]) -> PlaylistResult:
+    def optimize(
+        self,
+        tracks: list[Track],
+        start_track_id: str | None = None,
+        end_track_id: str | None = None,
+        must_include_ids: list[str] | None = None,
+        target_length: int | None = None,
+    ) -> PlaylistResult:
         """
         Find the optimal playlist from given tracks.
 
         Args:
             tracks: List of tracks to optimize
+            start_track_id: Optional ID of track that must start the playlist
+            end_track_id: Optional ID of track that must end the playlist
+            must_include_ids: Optional list of track IDs that must be included
+            target_length: Optional exact length of playlist to find
 
         Returns:
             PlaylistResult with the optimized playlist
@@ -63,7 +74,38 @@ class PlaylistOptimizer:
             logger.warning("No tracks provided for optimization")
             return PlaylistResult(playlist=[], solver_status="empty_input")
 
+        # Map track IDs to indices
+        id_to_idx = {t.id: i for i, t in enumerate(tracks)}
+
+        # Validate inputs
+        start_idx = None
+        if start_track_id:
+            if start_track_id not in id_to_idx:
+                logger.error(f"Start track ID {start_track_id} not found in tracks")
+                return PlaylistResult(playlist=[], solver_status="invalid_input")
+            start_idx = id_to_idx[start_track_id]
+
+        end_idx = None
+        if end_track_id:
+            if end_track_id not in id_to_idx:
+                logger.error(f"End track ID {end_track_id} not found in tracks")
+                return PlaylistResult(playlist=[], solver_status="invalid_input")
+            end_idx = id_to_idx[end_track_id]
+
+        must_include_indices = []
+        if must_include_ids:
+            for tid in must_include_ids:
+                if tid not in id_to_idx:
+                    logger.warning(f"Must-include track {tid} not found, skipping")
+                else:
+                    must_include_indices.append(id_to_idx[tid])
+
         if len(tracks) == 1:
+            # Trivial case logic...
+            # If constraints fail for the single track, we should theoretically fail,
+            # but usually single track is valid if it matches start/end/must requirements.
+            # For simplicity, we keep existing behavior but check start/end if needed?
+            # Actually, standard behavior is fine.
             logger.info("Single track input, returning trivial result")
             return PlaylistResult(
                 playlist=tracks,
@@ -79,13 +121,24 @@ class PlaylistOptimizer:
             )
 
         model = cp_model.CpModel()
-        n = len(tracks)
+        num_tracks = len(tracks)
 
-        included = [model.new_bool_var(f"inc_{i}") for i in range(n)]
+        # We use a dummy node (index = num_tracks) to handle the start/end of the path
+        # The circuit will be: Dummy -> StartTrack -> ... -> EndTrack -> Dummy
+        dummy_idx = num_tracks
+        total_nodes = num_tracks + 1
+
+        # Variables for all nodes (tracks + dummy)
+        included = [model.new_bool_var(f"inc_{i}") for i in range(total_nodes)]
+
+        # Force dummy to be included
+        model.add(included[dummy_idx] == 1)
 
         edge_vars = {}
-        for i in range(n):
-            for j in range(n):
+
+        # 1. Edges between real tracks
+        for i in range(num_tracks):
+            for j in range(num_tracks):
                 if i != j and bpm_compatible(
                     tracks[i].bpm,
                     tracks[j].bpm,
@@ -94,55 +147,112 @@ class PlaylistOptimizer:
                 ):
                     edge_vars[(i, j)] = model.new_bool_var(f"edge_{i}_{j}")
 
-        logger.debug(f"Created {len(edge_vars)} BPM-compatible edges out of {n * (n - 1)} possible")
+        # 2. Edges to/from dummy node (allow entering/leaving the playlist anywhere)
+        for i in range(num_tracks):
+            # Dummy -> i (Start of playlist)
+            edge_vars[(dummy_idx, i)] = model.new_bool_var(f"start_at_{i}")
+            # i -> Dummy (End of playlist)
+            edge_vars[(i, dummy_idx)] = model.new_bool_var(f"end_at_{i}")
+
+        logger.debug(f"Created {len(edge_vars)} edges for {total_nodes} nodes")
 
         arcs = [(i, j, var) for (i, j), var in edge_vars.items()]
 
-        for i in range(n):
+        # Add self-loops for excluded nodes (standard TSP/circuit pattern)
+        for i in range(total_nodes):
             arcs.append((i, i, included[i].Not()))
 
         model.add_circuit(arcs)
 
-        for i in range(n):
-            incoming = [edge_vars[(j, i)] for j in range(n) if (j, i) in edge_vars]
-            if incoming:
-                model.add(sum(incoming) == included[i])
-            else:
-                model.add(included[i] == 0)
+        # --- Constraints ---
 
+        # Start Track constraint
+        if start_idx is not None:
+            # Force Dummy -> StartTrack
+            if (dummy_idx, start_idx) in edge_vars:
+                model.add(edge_vars[(dummy_idx, start_idx)] == 1)
+            else:
+                # Impossible start (e.g. if we had BPM constraints on start, but dummy has none)
+                model.add(included[dummy_idx] == 0)  # Force fail
+
+        # End Track constraint
+        if end_idx is not None:
+            # Force EndTrack -> Dummy
+            if (end_idx, dummy_idx) in edge_vars:
+                model.add(edge_vars[(end_idx, dummy_idx)] == 1)
+            else:
+                model.add(included[dummy_idx] == 0)
+
+        # Must Include constraints (Soft: High Objective Weight)
+        # We handle this in the objective function below.
+
+        # Target Length constraint
+        if target_length is not None:
+            # sum(included) includes dummy, so we want target_length + 1
+            # Cap at total tracks available
+            target = min(target_length, num_tracks)
+            model.add(sum(included) == target + 1)
+
+        # Harmonic violations (only for track-track edges, not dummy edges)
         violation_vars = {}
         for (i, j), edge_var in edge_vars.items():
+            # Skip dummy edges
+            if i == dummy_idx or j == dummy_idx:
+                continue
+
             if not is_harmonic_compatible(tracks[i].key, tracks[j].key, self.harmonic_level):
                 violation = model.new_bool_var(f"viol_{i}_{j}")
                 model.add(edge_var == 1).only_enforce_if(violation)
                 model.add(edge_var == 0).only_enforce_if(violation.Not())
                 violation_vars[(i, j)] = violation
 
-        total_transitions_var = model.new_int_var(0, n, "total_transitions")
-        model.add(total_transitions_var == sum(edge_vars.values()))
-
+        # Max violations constraint
         if violation_vars:
-            max_violations = max(1, int(n * self.max_violation_pct))
+            # Calculate max violations
+            # If max_violation_pct is 0.0, we want strict 0 violations.
+            # If max_violation_pct > 0.0 (e.g. 0.1), we usually want at least 1 allowed
+            # for small playlists (e.g. 5 tracks * 0.1 = 0.5 -> 0 would be too strict).
+            limit = int(num_tracks * self.max_violation_pct)
+            if self.max_violation_pct > 0 and limit == 0:
+                limit = 1
+
+            max_violations = limit
             model.add(sum(violation_vars.values()) <= max_violations)
             logger.debug(
                 f"Found {len(violation_vars)} non-harmonic edges, max allowed: {max_violations}"
             )
 
+        # Duration constraint (ignore dummy)
         if self.max_playlist_duration is not None:
             precision = 100
+            # tracks[i].duration for i < num_tracks
             total_duration_scaled = sum(
-                int(tracks[i].duration * precision) * included[i] for i in range(n)
+                int(tracks[i].duration * precision) * included[i] for i in range(num_tracks)
             )
             model.add(total_duration_scaled <= int(self.max_playlist_duration * precision))
-            logger.debug(f"Added duration constraint: {self.max_playlist_duration}s")
 
-        length_weight = 100
-        objective_terms = [length_weight * included[i] for i in range(n)]
+        # --- Objective ---
+        # 1. Base weight for including a track
+        base_weight = 100
 
-        if self.energy_weight > 0:
-            objective_terms.extend(
-                [int(self.energy_weight * tracks[i].energy) * included[i] for i in range(n)]
-            )
+        # 2. Bonus for "Must Include" tracks
+        # 100,000 ensures it's more valuable than adding 1000 regular tracks
+        must_include_weight = 100000
+
+        objective_terms = []
+
+        for i in range(num_tracks):
+            weight = base_weight
+
+            # Add energy weight if configured
+            if self.energy_weight > 0:
+                weight += int(self.energy_weight * tracks[i].energy)
+
+            # Add must_include bonus
+            if i in must_include_indices:
+                weight += must_include_weight
+
+            objective_terms.append(weight * included[i])
 
         model.maximize(sum(objective_terms))
 
@@ -157,7 +267,7 @@ class PlaylistOptimizer:
 
         if status in [cp_model.OPTIMAL, cp_model.FEASIBLE]:
             result = self._extract_result(
-                solver, tracks, included, edge_vars, violation_vars, status
+                solver, tracks, included, edge_vars, violation_vars, status, dummy_idx
             )
             if result.statistics:
                 logger.info(
@@ -182,32 +292,28 @@ class PlaylistOptimizer:
         edge_vars,
         violation_vars,
         status,
+        dummy_idx: int,
     ) -> PlaylistResult:
         """Extract playlist from solver solution."""
-        n = len(tracks)
+        num_tracks = len(tracks)
 
-        selected_indices = [i for i in range(n) if solver.value(included[i])]
+        # Get included indices (excluding dummy)
+        selected_indices = [i for i in range(num_tracks) if solver.value(included[i])]
 
         logger.debug(f"Selected {len(selected_indices)} tracks from solution")
 
         if not selected_indices:
             return PlaylistResult(playlist=[], solver_status="no_solution")
 
+        # Get all selected edges
         selected_edges = {
             (i, j): solver.value(var) for (i, j), var in edge_vars.items() if solver.value(var) == 1
         }
 
-        if not selected_edges:
-            if len(selected_indices) == 1:
-                playlist = [tracks[selected_indices[0]]]
-                transitions = []
-            else:
-                playlist = [tracks[i] for i in selected_indices]
-                transitions = []
-        else:
-            playlist, transitions = self._reconstruct_path(
-                tracks, selected_edges, selected_indices, violation_vars, solver
-            )
+        # Reconstruct path using dummy node logic
+        playlist, transitions = self._reconstruct_path_with_dummy(
+            tracks, selected_edges, dummy_idx, self.harmonic_level, self.allow_halftime_bpm
+        )
 
         harmonic = sum(1 for t in transitions if t.is_harmonic)
         non_harmonic = len(transitions) - harmonic
@@ -217,7 +323,7 @@ class PlaylistOptimizer:
         bpm_range = (min(bpms), max(bpms)) if bpms else (0.0, 0.0)
 
         statistics = PlaylistStatistics(
-            total_input_tracks=len(tracks),
+            total_input_tracks=num_tracks,
             playlist_length=len(playlist),
             harmonic_transitions=harmonic,
             non_harmonic_transitions=non_harmonic,
@@ -233,48 +339,59 @@ class PlaylistOptimizer:
             solver_time_seconds=solver.wall_time,
         )
 
-    def _reconstruct_path(self, tracks, selected_edges, selected_indices, violation_vars, solver):
-        """Reconstruct the track order from selected edges."""
-        edge_map = {i: j for (i, j) in selected_edges if i != j}
+    def _reconstruct_path_with_dummy(
+        self, tracks, selected_edges, dummy_idx, harmonic_level, allow_halftime
+    ):
+        """Reconstruct the path starting from dummy node."""
+        # Find start: dummy -> start_node
+        start_node = None
+        for i, j in selected_edges:
+            if i == dummy_idx:
+                start_node = j
+                break
 
-        if not edge_map:
-            return [tracks[i] for i in selected_indices], []
-
-        start = min(edge_map.keys())
+        if start_node is None:
+            return [], []
 
         playlist = []
         transitions = []
-        current = start
-        visited = set()
 
-        while current in edge_map and current not in visited:
-            visited.add(current)
+        current = start_node
+        # Traverse until we hit dummy again (end of path)
+        while current != dummy_idx:
             playlist.append(tracks[current])
 
-            next_idx = edge_map[current]
+            # Find next node
+            next_node = None
+            for i, j in selected_edges:
+                if i == current:
+                    next_node = j
+                    break
 
-            if next_idx in edge_map:
+            if next_node is None:
+                break
+
+            # If next is dummy, we are done with transitions
+            if next_node != dummy_idx:
+                # Calculate transition info
                 is_harmonic = is_harmonic_compatible(
-                    tracks[current].key, tracks[next_idx].key, self.harmonic_level
+                    tracks[current].key, tracks[next_node].key, harmonic_level
                 )
 
                 bpm_diff = get_bpm_difference(
-                    tracks[current].bpm, tracks[next_idx].bpm, self.allow_halftime_bpm
+                    tracks[current].bpm, tracks[next_node].bpm, allow_halftime
                 )
 
                 transitions.append(
                     TransitionInfo(
                         from_track=tracks[current],
-                        to_track=tracks[next_idx],
+                        to_track=tracks[next_node],
                         is_harmonic=is_harmonic,
                         is_bpm_compatible=True,
                         bpm_difference=bpm_diff,
                     )
                 )
 
-            current = next_idx
-
-        if current not in visited:
-            playlist.append(tracks[current])
+            current = next_node
 
         return playlist, transitions
