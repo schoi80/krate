@@ -173,29 +173,6 @@ See `examples/` directory:
 - `sdk_usage.py` - SDK usage demonstration
 - `logging_example.py` - Logging configuration example
 
-## Logging
-
-The library uses Python's standard `logging` module. Configure logging to see detailed information about the optimization process:
-
-```python
-import logging
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-)
-```
-
-Log levels:
-- `WARNING` (default): Errors and warnings only
-- `INFO`: Optimization progress, statistics, and results
-- `DEBUG`: Detailed solver information, edge counts, and configuration
-
-CLI verbosity:
-- No flag: WARNING level
-- `-v`: INFO level
-- `-vv`: DEBUG level
-
 ## Development
 
 ```bash
@@ -223,39 +200,6 @@ uv run pre-commit run --all-files
 
 # Run example
 uv run python examples/sdk_usage.py
-```
-
-### Commit Message Format
-
-This project enforces [Conventional Commits](https://www.conventionalcommits.org/):
-
-```
-<type>: <description>
-
-[optional body]
-
-[optional footer]
-```
-
-**Allowed types:**
-- `feat` - New feature
-- `fix` - Bug fix
-- `docs` - Documentation changes
-- `style` - Code style changes (formatting, etc.)
-- `refactor` - Code refactoring
-- `perf` - Performance improvements
-- `test` - Test changes
-- `build` - Build system changes
-- `ci` - CI configuration changes
-- `chore` - Other changes (deps, etc.)
-- `revert` - Revert previous commit
-
-**Examples:**
-```bash
-git commit -m "feat: add halftime BPM matching"
-git commit -m "fix: correct Camelot wheel compatibility check"
-git commit -m "docs: update README with logging examples"
-git commit -m "refactor: simplify return statements in bpm.py"
 ```
 
 ## How the Solver Works
