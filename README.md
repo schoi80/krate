@@ -5,7 +5,7 @@ Optimize [rekordbox](https://rekordbox.com) playlists for harmonic mixing using 
 ## Features
 
 - ✨ **Longest Path Optimization**: Finds the maximum number of tracks that can be mixed together
-- ⚡ **Energy Flow Management**: Enforces non-decreasing energy progression (1-5 range)
+- ⚡ **Energy Flow Management**: Enforces non-decreasing energy progression with max +1 increase per transition (1-5 range)
 - 🎵 **Harmonic Mixing**: Uses the Camelot Wheel system for key compatibility
 - 🎧 **Rekordbox Integration**: Read playlists directly from your local Rekordbox 6/7 database (tested with v7.2.8)
 - 🔊 **BPM Matching**: Supports direct, halftime, and doubletime BPM compatibility
@@ -163,7 +163,7 @@ Maximize playlist length while keeping non-harmonic transitions below the thresh
 | `allow_halftime_bpm` | True | Enable half/double-time matching |
 | `max_violation_pct` | 0.10 | Max percentage of non-harmonic transitions |
 | `harmonic_level` | STRICT | Harmonic compatibility strictness |
-| `enforce_energy_flow` | True | Enforce non-decreasing energy (`next >= current`) |
+| `enforce_energy_flow` | True | Enforce non-decreasing energy with max +1 increase (`next >= current` and `next - current <= 1`) |
 | `time_limit_seconds` | 60.0 | Solver time limit |
 
 ## Examples

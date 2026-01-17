@@ -138,13 +138,16 @@ class PlaylistOptimizer:
 
         edge_vars = {}
 
+        def is_energy_flow_valid(i: int, j: int) -> bool:
+            return j >= i and j - i <= 1
+
         # 1. Edges between real tracks
         for i in range(num_tracks):
             for j in range(num_tracks):
                 # Constraints:
                 # 1. Different tracks
                 # 2. BPM compatible
-                # 3. Energy must be non-decreasing (next >= current) if enforced
+                # 3. Energy flow valid (non-decreasing, max +1) if enforced
                 if (
                     i != j
                     and bpm_compatible(
@@ -153,7 +156,10 @@ class PlaylistOptimizer:
                         self.bpm_tolerance,
                         self.allow_halftime_bpm,
                     )
-                    and (not self.enforce_energy_flow or tracks[j].energy >= tracks[i].energy)
+                    and (
+                        not self.enforce_energy_flow
+                        or is_energy_flow_valid(tracks[i].energy, tracks[j].energy)
+                    )
                 ):
                     edge_vars[(i, j)] = model.new_bool_var(f"edge_{i}_{j}")
 

@@ -36,11 +36,12 @@ Python library + CLI for optimizing DJ playlists using Google OR-Tools CP-SAT so
 ## CONVENTIONS
 - **Layout**: `src/` layout with `uv` package manager.
 - **Energy Range**: Strictly **1-5**. Track validation enforces this.
-- **Energy Flow**: By default, the solver enforces non-decreasing energy (`next >= current`). This can be toggled via `enforce_energy_flow`.
+- **Energy Flow**: By default, the solver enforces non-decreasing energy with max +1 increase (`next >= current` and `next - current <= 1`). This can be toggled via `enforce_energy_flow`.
 - **Line Length**: **100 chars** (enforced by ruff).
 - **Quotes**: Double quotes always.
 - **Commits**: Conventional Commits (feat, fix, docs, etc.) enforced by pre-commit.
 - **Tests**: Pure `pytest` class-based structure. **NO fixtures**, **NO conftest.py**. Data instantiated inline.
+- **Dev Workflow**: Use `Makefile` targets for all development tasks (testing, linting, formatting).
 
 ## USER PREFERENCES
 - **Testing**: Maintain high coverage (~90%). Mock external dependencies (DB/filesystem) heavily. Avoid shared fixtures in favor of inline instantiation for clarity.
@@ -60,7 +61,15 @@ Python library + CLI for optimizing DJ playlists using Google OR-Tools CP-SAT so
 
 ## COMMANDS
 ```bash
-# Dev Cycle
+# Dev Cycle (use Makefile targets)
+make install      # Install deps + pre-commit hooks
+make test         # Run tests with coverage
+make lint         # Auto-fix linting issues
+make format       # Format code
+make check        # Run lint-check + format-check + test (CI-like)
+make pre-commit   # Run all pre-commit hooks
+
+# Legacy/Manual Commands (avoid - use Makefile instead)
 uv sync --dev
 uv run pytest
 uv run ruff check --fix && uv run ruff format
